@@ -1,0 +1,1412 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HVDC Congress Tracker v5 – PID Patagonia-GBA</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --bg:     #080d18;
+  --bg2:    #0d1526;
+  --bg3:    #141e34;
+  --bg4:    #1c2840;
+  --bg5:    #243050;
+  --border: rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.13);
+  --text:   #eaecf5;
+  --text2:  #8b93ad;
+  --text3:  #50597a;
+  --accent: #4c8cf5;
+  --accent2:#7ab0ff;
+  --gold:   #f5a623;
+  --gold2:  #ffd07a;
+  --green:  #2dce89;
+  --red:    #f5365c;
+  --orange: #fb6340;
+  --purple: #8965e0;
+  --teal:   #11cdef;
+  --r:      12px;
+  --f:      'DM Sans',sans-serif;
+  --mono:   'DM Mono',monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:var(--f);font-size:14px;line-height:1.6;min-height:100vh;}
+
+/* SHELL */
+.shell{display:flex;height:100vh;overflow:hidden;}
+
+/* SIDEBAR */
+.sidebar{width:210px;min-width:210px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;}
+.logo-area{padding:18px 16px 14px;border-bottom:1px solid var(--border);}
+.logo-badge{display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#1a2d5a,#1e3a70);border:1px solid rgba(76,140,245,.3);border-radius:8px;padding:4px 8px 4px 6px;margin-bottom:8px;}
+.logo-dot{width:20px;height:20px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#fff;}
+.logo-text{font-size:11px;font-weight:600;color:var(--accent2);letter-spacing:.5px;}
+.logo-title{font-size:10px;color:var(--text2);line-height:1.4;}
+.nav{flex:1;padding:10px 0;}
+.ns{padding:5px 16px 3px;font-size:10px;font-weight:600;color:var(--text3);letter-spacing:1px;text-transform:uppercase;}
+.ni{display:flex;align-items:center;gap:8px;padding:7px 16px;cursor:pointer;color:var(--text2);font-size:12px;border-left:2px solid transparent;transition:all .15s;}
+.ni:hover{background:var(--bg3);color:var(--text);}
+.ni.active{background:rgba(76,140,245,.08);color:var(--accent2);border-left:2px solid var(--accent);font-weight:500;}
+.ni svg{width:14px;height:14px;opacity:.7;flex-shrink:0;}
+.ni.active svg{opacity:1;}
+.nbadge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:600;border-radius:10px;padding:1px 6px;min-width:18px;text-align:center;}
+.nbadge.gold{background:var(--gold);color:#1a1000;}
+.sidebar-bottom{padding:12px 16px;border-top:1px solid var(--border);}
+.pulse-row{display:flex;align-items:center;gap:7px;font-size:10px;color:var(--text3);}
+.pulse{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;flex-shrink:0;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(45,206,137,.4);}50%{opacity:.7;box-shadow:0 0 0 4px rgba(45,206,137,0);}}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column;}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:11px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:5;}
+.page-title{font-size:15px;font-weight:600;color:var(--text);}
+.page-sub{font-size:11px;color:var(--text2);margin-left:4px;}
+.topbar-actions{margin-left:auto;display:flex;gap:8px;align-items:center;}
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:7px;font-size:11px;font-family:var(--f);font-weight:500;cursor:pointer;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);transition:all .15s;}
+.btn:hover{background:var(--bg4);color:var(--text);}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.btn.primary:hover{background:var(--accent2);}
+.btn.gold-btn{background:rgba(245,166,35,.1);border-color:rgba(245,166,35,.3);color:var(--gold2);}
+.btn svg{width:13px;height:13px;}
+.content{padding:20px 24px;flex:1;}
+.section{display:none;}
+.section.active{display:block;}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;position:relative;overflow:hidden;}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;}
+.kpi.blue::before{background:var(--accent);}
+.kpi.gold::before{background:var(--gold);}
+.kpi.red::before{background:var(--red);}
+.kpi.green::before{background:var(--green);}
+.kpi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;font-weight:500;margin-bottom:5px;}
+.kpi-value{font-size:26px;font-weight:600;color:var(--text);line-height:1;margin-bottom:3px;}
+.kpi-sub{font-size:10px;color:var(--text2);}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.card-header{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;}
+.card-title{font-size:12px;font-weight:600;color:var(--text);}
+.card-sub{font-size:10px;color:var(--text2);margin-left:auto;}
+.card-body{padding:14px 16px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;}
+.three-col{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px;}
+
+/* TABLE - MAIN SECTION */
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:var(--bg3);}
+th{padding:9px 10px;text-align:left;font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;border-bottom:1px solid var(--border);white-space:nowrap;}
+td{padding:10px 10px;font-size:11px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tr:hover td{background:rgba(255,255,255,.015);}
+.td-name{font-weight:500;color:var(--text);font-size:11px;}
+.td-acro{font-family:var(--mono);font-size:10px;color:var(--accent2);font-weight:500;}
+.td-date{font-family:var(--mono);font-size:10px;white-space:nowrap;}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:9px;font-weight:600;letter-spacing:.3px;white-space:nowrap;}
+.badge.done{background:rgba(80,89,122,.2);color:var(--text3);}
+.badge.urgent{background:rgba(245,54,92,.15);color:#ff6b8a;border:1px solid rgba(245,54,92,.2);}
+.badge.soon{background:rgba(245,166,35,.15);color:var(--gold2);border:1px solid rgba(245,166,35,.2);}
+.badge.pending{background:rgba(76,140,245,.12);color:var(--accent2);border:1px solid rgba(76,140,245,.2);}
+.badge.ok{background:rgba(45,206,137,.1);color:#5fffc0;border:1px solid rgba(45,206,137,.15);}
+
+/* RELEVANCE BAR */
+.rel-bar{display:flex;gap:2px;align-items:center;}
+.rel-seg{width:12px;height:5px;border-radius:1px;background:var(--bg5);}
+.rel-seg.on{background:var(--gold);}
+
+/* FILTER BAR */
+.filter-bar{display:flex;gap:7px;margin-bottom:14px;flex-wrap:wrap;}
+.fb{padding:4px 11px;border-radius:20px;font-size:10px;font-weight:500;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;transition:all .15s;}
+.fb:hover{background:var(--bg4);color:var(--text);}
+.fb.active{background:rgba(76,140,245,.12);border-color:rgba(76,140,245,.3);color:var(--accent2);}
+
+/* LINK BUTTON */
+.link-btn{display:inline-flex;align-items:center;gap:4px;color:var(--accent2);font-size:10px;text-decoration:none;background:rgba(76,140,245,.08);border:1px solid rgba(76,140,245,.2);padding:2px 7px;border-radius:4px;white-space:nowrap;transition:all .15s;}
+.link-btn:hover{background:rgba(76,140,245,.18);}
+.template-btn{display:inline-flex;align-items:center;gap:4px;color:var(--gold2);font-size:10px;text-decoration:none;background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);padding:2px 7px;border-radius:4px;white-space:nowrap;transition:all .15s;margin-top:3px;}
+.template-btn:hover{background:rgba(245,166,35,.18);}
+
+/* COST CELL */
+.cost-free{color:var(--green);font-weight:500;font-size:10px;}
+.cost-low{color:var(--teal);font-size:10px;}
+.cost-mid{color:var(--gold);font-size:10px;}
+.cost-high{color:var(--orange);font-size:10px;}
+.cost-unknown{color:var(--text3);font-size:10px;font-style:italic;}
+
+/* URGENCY BARS */
+.urgency-list{display:flex;flex-direction:column;gap:7px;}
+.urgency-item{padding:9px 12px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);}
+.urgency-top{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+.urgency-name{font-size:11px;font-weight:500;flex:1;color:var(--text);}
+.urgency-days{font-size:11px;font-family:var(--mono);font-weight:500;}
+.urgency-bar-bg{height:3px;background:var(--bg5);border-radius:2px;overflow:hidden;}
+.urgency-bar-fill{height:100%;border-radius:2px;transition:width .8s ease;}
+
+/* TIMELINE */
+.timeline{display:flex;flex-direction:column;gap:8px;}
+.tl-item{display:flex;gap:10px;align-items:flex-start;padding:9px 12px;border-radius:7px;border:1px solid var(--border);background:var(--bg3);transition:border-color .2s;cursor:pointer;}
+.tl-item:hover{border-color:var(--border2);}
+.tl-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;margin-top:4px;}
+.tl-content{flex:1;min-width:0;}
+.tl-title{font-size:11px;font-weight:500;color:var(--text);margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.tl-meta{font-size:10px;color:var(--text2);}
+.tl-date{font-size:10px;color:var(--text3);white-space:nowrap;font-family:var(--mono);}
+
+/* GANTT */
+.gantt-wrap{overflow-x:auto;padding-bottom:6px;}
+.gantt{min-width:820px;}
+.gantt-header{display:flex;margin-bottom:6px;padding-left:140px;}
+.gantt-month{flex:1;text-align:center;font-size:9px;font-weight:600;color:var(--text3);letter-spacing:.5px;text-transform:uppercase;border-left:1px solid var(--border);padding:3px 0;}
+.gantt-row{display:flex;align-items:center;margin-bottom:4px;}
+.gantt-label{width:140px;min-width:140px;font-size:10px;font-weight:500;color:var(--text2);padding-right:8px;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.gantt-track{flex:1;position:relative;height:20px;}
+.gantt-bg{position:absolute;top:0;bottom:0;border-left:1px solid var(--border);}
+.gantt-bar{position:absolute;top:2px;bottom:2px;border-radius:3px;display:flex;align-items:center;padding:0 5px;font-size:9px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;min-width:6px;cursor:pointer;transition:opacity .2s;}
+.gantt-bar:hover{opacity:.8;filter:brightness(1.15);}
+.gantt-deadline{position:absolute;top:1px;bottom:1px;width:2px;border-radius:1px;background:var(--red);opacity:.8;}
+.gantt-deadline::after{content:'';position:absolute;top:-3px;left:-3px;width:8px;height:8px;border-radius:50%;background:var(--red);}
+.today-line{position:absolute;top:-2px;bottom:-2px;width:1px;background:rgba(76,140,245,.6);z-index:2;pointer-events:none;}
+.today-line::after{content:'HOY';position:absolute;top:-13px;left:-10px;font-size:8px;font-weight:700;color:var(--accent);letter-spacing:.3px;}
+
+/* MODAL */
+.modal-overlay{display:none;position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:14px;width:580px;max-width:90vw;max-height:85vh;overflow-y:auto;padding:22px;animation:fadeIn .2s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+.modal-close{float:right;background:var(--bg3);border:1px solid var(--border);color:var(--text2);border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;}
+.modal-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:5px;}
+.modal-label{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px;}
+.modal-value{font-size:12px;color:var(--text);line-height:1.5;}
+.detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.detail-item{background:var(--bg3);border-radius:7px;padding:9px 11px;}
+.detail-lbl{font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+.detail-val{font-size:11px;font-weight:500;color:var(--text);}
+.modal-section{margin-bottom:14px;}
+
+/* TOAST */
+.toast-area{position:fixed;bottom:20px;right:20px;z-index:200;display:flex;flex-direction:column;gap:7px;pointer-events:none;}
+.toast{background:var(--bg3);border:1px solid var(--border2);border-radius:9px;padding:9px 14px;display:flex;align-items:center;gap:9px;font-size:11px;color:var(--text);box-shadow:0 8px 32px rgba(0,0,0,.4);animation:slideIn .3s ease;pointer-events:all;min-width:240px;}
+.toast.green{border-color:rgba(45,206,137,.3);}
+.toast.red{border-color:rgba(245,54,92,.3);}
+@keyframes slideIn{from{opacity:0;transform:translateX(16px);}to{opacity:1;transform:translateX(0);}}
+
+/* AI PANEL */
+.ai-panel{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:20px;}
+.ai-header{background:linear-gradient(90deg,rgba(76,140,245,.07),rgba(137,101,224,.07));border-bottom:1px solid var(--border);padding:12px 16px;display:flex;align-items:center;gap:10px;}
+.ai-icon{width:30px;height:30px;border-radius:7px;background:linear-gradient(135deg,#4c8cf5,#8965e0);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.ai-body{padding:16px;}
+.sources-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.sc{display:flex;align-items:center;gap:7px;padding:7px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;cursor:pointer;transition:all .15s;}
+.sc:hover{border-color:var(--border2);}
+.sc.sel{border-color:rgba(76,140,245,.4);background:rgba(76,140,245,.07);}
+.sc-cb{width:13px;height:13px;border-radius:3px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:8px;color:var(--accent);flex-shrink:0;}
+.sc.sel .sc-cb{background:var(--accent);border-color:var(--accent);color:#fff;}
+.sc-name{font-size:10px;font-weight:500;color:var(--text2);line-height:1.3;flex:1;min-width:0;}
+.sc.sel .sc-name{color:var(--text);}
+.ai-controls{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.interval-select{background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--f);font-size:11px;border-radius:7px;padding:6px 28px 6px 10px;cursor:pointer;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238b92aa' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;}
+.api-key-input{flex:1;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:10px;border-radius:7px;padding:6px 10px;outline:none;}
+.api-key-input:focus{border-color:rgba(76,140,245,.5);}
+.api-key-input::placeholder{color:var(--text3);}
+.ai-log{background:var(--bg);border:1px solid var(--border);border-radius:7px;padding:10px 12px;font-family:var(--mono);font-size:10px;line-height:1.8;color:var(--text2);min-height:100px;max-height:200px;overflow-y:auto;}
+.log-line{display:flex;gap:9px;align-items:flex-start;}
+.log-time{color:var(--text3);white-space:nowrap;flex-shrink:0;}
+.log-ok{color:var(--green);}
+.log-warn{color:var(--gold);}
+.log-err{color:var(--red);}
+.log-info{color:var(--accent2);}
+
+/* MAP */
+.map-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);}
+.map-legend-item{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--text2);}
+.map-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+
+/* GOOGLE SHEETS PANEL */
+.gs-panel{background:linear-gradient(135deg,rgba(15,157,88,.08),rgba(66,133,244,.08));border:1px solid rgba(15,157,88,.25);border-radius:var(--r);padding:16px 18px;margin-bottom:20px;}
+.gs-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.gs-icon{width:32px;height:32px;border-radius:7px;background:linear-gradient(135deg,#0f9d58,#4285f4);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gs-title{font-size:13px;font-weight:600;color:var(--text);}
+.gs-sub{font-size:10px;color:var(--text2);}
+.gs-status{display:flex;align-items:center;gap:6px;font-size:10px;padding:3px 10px;border-radius:20px;border:1px solid var(--border2);background:var(--bg3);}
+.gs-dot{width:6px;height:6px;border-radius:50%;background:var(--text3);flex-shrink:0;}
+.gs-dot.ok{background:var(--green);animation:pulse 2s infinite;}
+.gs-dot.err{background:var(--red);}
+.gs-dot.loading{background:var(--gold);animation:pulse 1s infinite;}
+.gs-input-row{display:flex;gap:8px;align-items:flex-end;margin-bottom:10px;}
+.gs-input{flex:1;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-family:var(--mono);font-size:10px;border-radius:7px;padding:7px 10px;outline:none;}
+.gs-input:focus{border-color:rgba(15,157,88,.5);}
+.gs-input::placeholder{color:var(--text3);}
+.gs-help{font-size:10px;color:var(--text3);line-height:1.6;}
+.gs-help a{color:var(--accent2);text-decoration:none;}
+.gs-help a:hover{text-decoration:underline;}
+.gs-stats{display:flex;gap:12px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);}
+.gs-stat{font-size:10px;color:var(--text2);}
+.gs-stat strong{color:var(--text);font-weight:600;}
+.sync-bar{height:2px;background:var(--border);border-radius:1px;overflow:hidden;margin-top:8px;display:none;}
+.sync-bar-fill{height:100%;background:linear-gradient(90deg,#0f9d58,#4285f4);border-radius:1px;width:0%;transition:width .4s ease;}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.skeleton{background:linear-gradient(90deg,var(--bg3) 25%,var(--bg4) 50%,var(--bg3) 75%);background-size:200% 100%;animation:shimmer 1.2s infinite;border-radius:4px;display:inline-block;}
+
+::-webkit-scrollbar{width:3px;height:3px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="logo-area">
+    <div class="logo-badge"><div class="logo-dot">H</div><span class="logo-text">HVDC TRACKER</span></div>
+    <div class="logo-title">PID Patagonia–GBA<br>Congresos 2026 · v5.1</div>
+  </div>
+  <nav class="nav">
+    <div class="ns">Vistas</div>
+    <div class="ni active" onclick="showSection('overview')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      Resumen
+    </div>
+    <div class="ni" onclick="showSection('calendario')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      Calendario 2026
+      <span class="nbadge gold" id="badge-upcoming">—</span>
+    </div>
+    <div class="ni" onclick="showSection('gantt')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6h10M3 12h14M3 18h8"/></svg>
+      Gantt / Timeline
+    </div>
+    <div class="ni" onclick="showSection('deadlines')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      Deadlines
+      <span class="nbadge" id="badge-urgent">—</span>
+    </div>
+    <div class="ni" onclick="showSection('mapa')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Mapa
+    </div>
+    <div class="ns" style="margin-top:6px">Herramientas</div>
+    <div class="ni" onclick="showSection('actualizador')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2a10 10 0 0 1 7.38 16.75"/><path d="M12 22a10 10 0 0 1-7.38-16.75"/><path d="M12 6v6l4 2"/></svg>
+      Actualizador IA
+    </div>
+    <div class="ni" onclick="showSection('sheets')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+      Google Sheets
+    </div>
+  </nav>
+  <div class="sidebar-bottom">
+    <div class="pulse-row"><div class="pulse"></div><span id="last-update-text">Actualizado: 14 Jul 2026</span></div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="topbar">
+    <div><span class="page-title" id="page-title">Resumen General</span><span class="page-sub" id="page-sub">v5.0 · Google Sheets</span></div>
+    <div class="topbar-actions">
+      <span id="sync-status-bar" class="gs-status"><span class="gs-dot" id="sync-dot"></span><span id="sync-label">Sin conectar</span></span>
+      <button class="btn" id="sync-btn" onclick="syncFromSheets()" style="border-color:rgba(15,157,88,.3);color:#4ade80;background:rgba(15,157,88,.07)" title="Sincronizar con Google Sheets">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Sincronizar
+      </button>
+      <button class="btn" onclick="exportCSV()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Exportar CSV
+      </button>
+      <button class="btn gold-btn" onclick="showSection('actualizador')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+        Actualizar con IA
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+  <!-- OVERVIEW -->
+  <div class="section active" id="section-overview">
+    <div class="kpi-grid">
+      <div class="kpi blue"><div class="kpi-label">Eventos 2026</div><div class="kpi-value" id="kpi-total">—</div><div class="kpi-sub">en seguimiento</div></div>
+      <div class="kpi gold"><div class="kpi-label">Próximos 90 días</div><div class="kpi-value" id="kpi-upcoming">—</div><div class="kpi-sub">con fecha confirmada</div></div>
+      <div class="kpi red"><div class="kpi-label">Deadlines Urgentes</div><div class="kpi-value" id="kpi-urgent">—</div><div class="kpi-sub">en las próx. 6 semanas</div></div>
+      <div class="kpi green"><div class="kpi-label">Alta Relevancia HVDC</div><div class="kpi-value" id="kpi-rel5">—</div><div class="kpi-sub">con 4–5 estrellas</div></div>
+    </div>
+    <div class="three-col">
+      <div class="card">
+        <div class="card-header"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f5a623" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span class="card-title">Próximos Eventos</span><span class="card-sub">más cercanos primero</span></div>
+        <div class="card-body"><div class="timeline" id="timeline-upcoming"></div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f5365c" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span class="card-title">Urgencia Deadlines</span></div>
+        <div class="card-body"><div class="urgency-list" id="urgency-list"></div></div>
+      </div>
+    </div>
+    <div class="two-col">
+      <div class="card"><div class="card-header"><span class="card-title">Relevancia HVDC</span></div><div class="card-body"><div style="position:relative;height:180px"><canvas id="chart-relevance"></canvas></div></div></div>
+      <div class="card"><div class="card-header"><span class="card-title">Eventos por Región</span></div><div class="card-body"><div style="position:relative;height:180px"><canvas id="chart-region"></canvas></div></div></div>
+    </div>
+  </div>
+
+  <!-- CALENDARIO -->
+  <div class="section" id="section-calendario">
+    <div class="filter-bar" id="filter-bar"></div>
+    <div class="card">
+      <div class="card-body" style="padding:0">
+        <div class="table-wrap">
+          <table id="main-table">
+            <thead>
+              <tr>
+                <th>Congreso / Evento</th>
+                <th>Sigla</th>
+                <th>Fecha</th>
+                <th>Lugar</th>
+                <th>D. Abstract</th>
+                <th>D. Paper</th>
+                <th>Template</th>
+                <th>Costo Inscripción</th>
+                <th>Rel.</th>
+                <th>Estado</th>
+                <th>Web</th>
+              </tr>
+            </thead>
+            <tbody id="table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GANTT -->
+  <div class="section" id="section-gantt">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Timeline 2026</span><span class="card-sub">Barras = duración · Rojo = deadline paper · Azul = hoy</span></div>
+      <div class="card-body">
+        <div class="gantt-wrap"><div class="gantt" id="gantt-container"></div></div>
+        <div class="map-legend" style="margin-top:12px">
+          <div class="map-legend-item"><div class="map-dot" style="background:#f5a623"></div>Próximo</div>
+          <div class="map-legend-item"><div class="map-dot" style="background:#6b5acd"></div>Pendiente confirmación</div>
+          <div class="map-legend-item"><div style="width:12px;height:2px;background:var(--red);border-radius:1px"></div>&nbsp;Deadline paper</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEADLINES -->
+  <div class="section" id="section-deadlines">
+    <div class="card">
+      <div class="card-header"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#f5365c" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg><span class="card-title">Todos los Deadlines 2026</span></div>
+      <div class="card-body" style="padding:0">
+        <div class="table-wrap">
+          <table><thead><tr><th>Congreso</th><th>Hito</th><th>Fecha Límite</th><th>Días Restantes</th><th>Canal de Envío</th><th>Urgencia</th></tr></thead>
+          <tbody id="deadline-tbody"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAPA -->
+  <div class="section" id="section-mapa">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Distribución Geográfica — Eventos 2026</span><span class="card-sub">Clic para ver detalles</span></div>
+      <div class="card-body">
+        <div style="background:var(--bg3);border-radius:9px;overflow:hidden;position:relative;min-height:440px">
+          <canvas id="map-canvas" width="860" height="440" style="width:100%;height:auto;display:block"></canvas>
+        </div>
+        <div class="map-legend" id="map-legend"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTUALIZADOR -->
+  <div class="section" id="section-actualizador">
+    <div class="ai-panel">
+      <div class="ai-header">
+        <div class="ai-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+        <div><div style="font-size:13px;font-weight:600;color:var(--text)">Asistente de Actualización — Claude AI</div><div style="font-size:10px;color:var(--text2)">Revisa automáticamente las webs y actualiza fechas, deadlines y costos cada 15 días</div></div>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center">
+          <span id="scheduler-status" class="badge pending">Sin programar</span>
+          <button class="btn primary" id="run-now-btn" onclick="runUpdateNow()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Actualizar ahora
+          </button>
+        </div>
+      </div>
+      <div class="ai-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <div>
+            <div class="modal-label" style="margin-bottom:8px">Fuentes a revisar</div>
+            <div class="sources-grid" id="sources-grid"></div>
+          </div>
+          <div>
+            <div class="modal-label" style="margin-bottom:8px">Configuración</div>
+            <div style="display:flex;flex-direction:column;gap:9px">
+              <div><div style="font-size:10px;color:var(--text3);margin-bottom:4px">API Key de Anthropic</div>
+              <input type="password" id="api-key-input" class="api-key-input" placeholder="sk-ant-..." style="width:100%"></div>
+              <div><div style="font-size:10px;color:var(--text3);margin-bottom:4px">Frecuencia de actualización automática</div>
+              <select id="interval-select" class="interval-select">
+                <option value="0">Manual</option>
+                <option value="7">Cada 7 días</option>
+                <option value="15" selected>Cada 15 días ✓ recomendado</option>
+                <option value="30">Cada 30 días</option>
+              </select></div>
+              <div style="display:flex;gap:7px">
+                <button class="btn" onclick="scheduleUpdater()" style="flex:1">Programar</button>
+                <button class="btn" onclick="selectAllSources()" style="flex:1">Sel. todas</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-label" style="margin-bottom:7px">Log de actividad</div>
+        <div class="ai-log" id="ai-log">
+          <div class="log-line"><span class="log-time">--:--:--</span><span class="log-info">Sistema inicializado · v3.0 May 2026 · +CADI-CAEDI · CLAGTEE y URUCON actualizados</span></div>
+          <div class="log-line"><span class="log-time">--:--:--</span><span style="color:var(--text2)">Ingresá tu API key y seleccioná las fuentes para comenzar.</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="results-panel" style="display:none">
+      <div class="card-header"><span class="card-title">Resultado del último análisis</span><span class="card-sub" id="results-date"></span></div>
+      <div class="card-body"><div id="results-content" style="font-size:12px;color:var(--text);line-height:1.7;white-space:pre-wrap"></div></div>
+    </div>
+  </div>
+
+  <!-- GOOGLE SHEETS -->
+  <div class="section" id="section-sheets">
+
+    <!-- Connection panel -->
+    <div class="gs-panel">
+      <div class="gs-header">
+        <div class="gs-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
+        </div>
+        <div style="flex:1">
+          <div class="gs-title">Conexión con Google Sheets</div>
+          <div class="gs-sub">Los eventos del archivo <strong>siempre se mantienen</strong>. Los del Sheets se suman o actualizan (por sigla), sin duplicar. A medida que agregás filas, aparecen al sincronizar.</div>
+        </div>
+        <div id="gs-status-badge" class="gs-status"><span class="gs-dot" id="gs-dot"></span><span id="gs-status-text">Sin conectar</span></div>
+      </div>
+
+      <div class="gs-input-row">
+        <div style="flex:1">
+          <div style="font-size:10px;color:var(--text3);margin-bottom:5px">URL de publicación de Google Sheets (JSON)</div>
+          <input class="gs-input" id="gs-url" placeholder="https://docs.google.com/spreadsheets/d/TU_ID/gviz/tq?tqx=out:json&sheet=Congresos" style="width:100%">
+        </div>
+        <button class="btn primary" onclick="connectSheets()" style="white-space:nowrap;align-self:flex-end">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          Conectar
+        </button>
+      </div>
+      <div class="sync-bar" id="sync-bar"><div class="sync-bar-fill" id="sync-bar-fill"></div></div>
+      <div class="gs-stats" id="gs-stats" style="display:none">
+        <div class="gs-stat">Eventos cargados: <strong id="gs-ev-count">—</strong></div>
+        <div class="gs-stat">Última sync: <strong id="gs-last-sync">—</strong></div>
+        <div class="gs-stat">Fuente: <strong id="gs-sheet-name">—</strong></div>
+      </div>
+      <div class="gs-help" style="margin-top:12px">
+        <strong style="color:var(--text2)">Cómo obtener la URL:</strong><br>
+        1. Abrí tu Google Sheets → <strong>Archivo → Compartir → Publicar en la web</strong><br>
+        2. En "Publicar como" elegí <strong>Valores separados por comas (.csv)</strong> de la hoja "Congresos"<br>
+        3. O usá el formato JSON: reemplazá <code style="color:var(--accent2)">TU_ID</code> por el ID de tu planilla (está en la URL entre /d/ y /edit)<br>
+        4. Asegurate que la planilla sea pública (<strong>Compartir → Cualquiera con el enlace → Lector</strong>)<br>
+        <a href="https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgVE2upms/edit" target="_blank">→ Ver planilla de ejemplo con el formato correcto</a>
+      </div>
+    </div>
+
+    <!-- Columnas esperadas -->
+    <div class="card" style="margin-bottom:20px">
+      <div class="card-header">
+        <span class="card-title">Formato esperado de la planilla</span>
+        <span class="card-sub">Las columnas deben estar en la hoja "Congresos" con estos encabezados exactos</span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th>Columna</th><th>Ejemplo</th><th>Notas</th>
+            </tr></thead>
+            <tbody id="schema-table"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Previsualización de datos -->
+    <div class="card" id="gs-preview-card" style="display:none">
+      <div class="card-header">
+        <span class="card-title">Vista previa combinada (archivo + Sheets)</span>
+        <span class="card-sub" id="gs-preview-count">—</span>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div style="overflow-x:auto">
+          <table><thead><tr>
+            <th>Congreso</th><th>Sigla</th><th>Fecha</th><th>Lugar</th><th>D.Paper</th><th>Costo</th><th>Rel.</th><th>Estado</th>
+          </tr></thead>
+          <tbody id="gs-preview-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Guía GitHub Pages -->
+    <div class="card">
+      <div class="card-header">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#8965e0" stroke-width="2"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
+        <span class="card-title">Publicar en GitHub Pages (cero costo)</span>
+      </div>
+      <div class="card-body">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div>
+            <div style="font-size:11px;color:var(--text);font-weight:600;margin-bottom:10px">Pasos para publicar</div>
+            <ol style="font-size:11px;color:var(--text2);line-height:2;padding-left:16px">
+              <li>Creá una cuenta en <a href="https://github.com" target="_blank" style="color:var(--accent2)">github.com</a> (gratis)</li>
+              <li>Creá un repositorio nuevo → nombre: <code style="color:var(--teal)">hvdc-calendario</code></li>
+              <li>Subí este archivo como <code style="color:var(--teal)">index.html</code></li>
+              <li>Ir a <strong>Settings → Pages → Source: main branch</strong></li>
+              <li>GitHub te da la URL: <code style="color:var(--gold)">tuusuario.github.io/hvdc-calendario</code></li>
+              <li>¡Listo! Compartís esa URL con el grupo</li>
+            </ol>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--text);font-weight:600;margin-bottom:10px">Flujo de trabajo del equipo</div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div style="background:var(--bg3);border-radius:7px;padding:9px 12px;font-size:10px;color:var(--text2);border-left:2px solid var(--green)">
+                <strong style="color:var(--green)">01 · Editar datos</strong><br>
+                Cualquier miembro abre el Google Sheets y agrega/edita filas directamente
+              </div>
+              <div style="background:var(--bg3);border-radius:7px;padding:9px 12px;font-size:10px;color:var(--text2);border-left:2px solid var(--accent)">
+                <strong style="color:var(--accent2)">02 · Ver el tablero</strong><br>
+                Acceden a la URL de GitHub Pages desde cualquier dispositivo
+              </div>
+              <div style="background:var(--bg3);border-radius:7px;padding:9px 12px;font-size:10px;color:var(--text2);border-left:2px solid var(--gold)">
+                <strong style="color:var(--gold2)">03 · Sincronizar</strong><br>
+                Botón "Sincronizar" en la barra superior — refresca los datos desde Sheets al instante
+              </div>
+              <div style="background:var(--bg3);border-radius:7px;padding:9px 12px;font-size:10px;color:var(--text2);border-left:2px solid var(--purple)">
+                <strong style="color:#c4aaff">04 · Con IA (cada 15 días)</strong><br>
+                Usás el Actualizador IA para que Claude revise las webs y actualice el Sheets
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  </div><!-- /content -->
+</main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay" onclick="closeModal(event)">
+  <div class="modal"><button class="modal-close" onclick="document.getElementById('modal-overlay').classList.remove('open')">✕</button><div id="modal-inner"></div></div>
+</div>
+<div class="toast-area" id="toast-area"></div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────
+const TODAY = new Date(2026,6,14); // 14 julio 2026
+
+// Todos los eventos 2026 ordenados por fecha de inicio
+const EVENTS = [
+  {
+    id:1, name:"V Congreso de Investigación y Transferencia Tecnológica en Ingeniería Eléctrica", short:"CITTIE 2026",
+    type:"UTN", dateStart:new Date(2026,4,7), dateEnd:new Date(2026,4,8),
+    location:"UTN Fac. Regional Santa Fe, Argentina", lat:-31.62, lon:-60.7,
+    freq:"Bienal",
+    deadlineAbstract:new Date(2025,9,7), deadlinePaper:new Date(2026,3,27),
+    channel:"cittie26@frsf.utn.edu.ar · OCS: cimec.org.ar/cittie",
+    web:"https://cittie2026.frsf.utn.edu.ar/",
+    templateUrl:"https://frsfutneduar-my.sharepoint.com/:w:/g/personal/jltorres_frsf_utn_edu_ar/Ed39pSt6WY5IqREPV04UYPYBqgFqdRTV2s75pV61o-nBVQ?e=kmORTG",
+    templateLabel:"Plantilla Word",
+    templateUrl2:"https://frsfutneduar-my.sharepoint.com/:u:/g/personal/jltorres_frsf_utn_edu_ar/ET9c8ZndFTBFghPc_fBAjjIBJGrKD7Ld32W4QlVh2krMiQ?e=vy0aNH",
+    templateLabel2:"Plantilla LaTeX",
+    costARS:"$70.000–$90.000 ARS (autor)",
+    costUSD:null,
+    costNote:"Hasta 13/3: $70k · Desde 14/3: $90k · Estudiante: $25k–$35k",
+    relevance:4, status:"upcoming",
+    notes:"Sesión 1: Generación, Transmisión y Distribución. 6 sesiones técnicas. 15 min presentación + 5 preguntas."
+  },
+  {
+    id:2, name:"XVI Simpósio de Especialistas em Planejamento da Operação e Expansão Elétrica", short:"XVI SEPOPE",
+    type:"CIGRE Brasil", dateStart:new Date(2026,4,18), dateEnd:new Date(2026,4,20),
+    location:"Foz do Iguaçu, Brasil", lat:-25.52, lon:-54.58,
+    freq:"Bienal",
+    deadlineAbstract:new Date(2026,0,15), deadlinePaper:new Date(2026,3,5),
+    channel:"operacional@pmaiseventos.com · sige.itaipu.gov.br",
+    web:"https://sepope.com.br/",
+    templateUrl:null, templateLabel:null,
+    costARS:null, costUSD:"A confirmar (ver web)",
+    costNote:"Acepta PT/EN/ES. Revisar web para tarifas.",
+    relevance:4, status:"upcoming",
+    notes:"CE C1–C6 + B4 (HVDC). Idiomas: portugués, inglés, español. Organizado por CIGRE Brasil."
+  },
+  {
+    id:3, name:"CIGRE Paris Session 2026", short:"CIGRE 2026",
+    type:"CIGRE", dateStart:new Date(2026,7,23), dateEnd:new Date(2026,7,28),
+    location:"Palais des Congrès, París, Francia", lat:48.87, lon:2.28,
+    freq:"Bienal (años pares)",
+    deadlineAbstract:new Date(2025,6,7), deadlinePaper:new Date(2026,3,20),
+    channel:"session.cigre.org · registrations.cigre.org",
+    web:"https://session.cigre.org/",
+    templateUrl:"https://session.cigre.org/guides-templates/authors.html",
+    templateLabel:"Guía Autores CIGRE",
+    costARS:null, costUSD:"~€1.500–2.500 EUR (miembro/no miembro)",
+    costNote:"50% descuento jóvenes <35 años. Miembro CIGRE: tarifa reducida.",
+    relevance:5, status:"upcoming",
+    notes:"CE-B4 HVDC – máxima relevancia mundial. Inscripción abierta desde 16/2/2026. 4.500+ delegados, 99 países."
+  },
+  {
+    id:4, name:"8° Congreso Argentino de Ingeniería / 14° Congreso Argentino de Enseñanza de Ingeniería", short:"CADI–CAEDI 2026",
+    type:"CONFEDI", dateStart:new Date(2026,8,23), dateEnd:new Date(2026,8,25),
+    location:"San Fernando del Valle de Catamarca, Argentina", lat:-28.46, lon:-65.78,
+    freq:"Bienal",
+    deadlineAbstract:new Date(2026,3,17), deadlinePaper:new Date(2026,3,30),
+    channel:"confedi.org.ar/evento/cadi-caedi-2026/",
+    web:"https://confedi.org.ar/evento/cadi-caedi-2026/",
+    templateUrl:null, templateLabel:null,
+    costARS:null, costUSD:"A confirmar",
+    costNote:"Organizado por CONFEDI + CODINOA (UNCA). Trabajos corregidos: 26/06/2026.",
+    relevance:3, status:"upcoming",
+    notes:"NUEVO v3. Temáticas: ingeniería sostenible, energía, eficiencia energética. Sección Ciencia Joven para estudiantes."
+  },
+  {
+    id:5, name:"XVI Congreso Latinoamericano de Generación y Transporte de Energía Eléctrica", short:"XVI CLAGTEE",
+    type:"Académico", dateStart:new Date(2026,9,28), dateEnd:new Date(2026,9,30),
+    location:"Santiago de Chile, Chile", lat:-33.45, lon:-70.67,
+    freq:"Bienal",
+    deadlineAbstract:null, deadlinePaper:new Date(2026,7,1),
+    channel:"Ver clagtee2026.org",
+    web:"https://www.clagtee2026.org/",
+    templateUrl:null, templateLabel:null,
+    costARS:null, costUSD:"A confirmar",
+    costNote:"Sede confirmada: Santiago de Chile. Notificación aceptación: 15/09/2026.",
+    relevance:5, status:"upcoming",
+    notes:"ACTUALIZADO v3: sede Santiago de Chile, 28–30 oct. Deadline paper: 1 ago 2026. Notif. aceptación: 15 sep 2026. UNESP + UCV + UNMdP."
+  },
+  {
+    id:6, name:"XIV Encuentro de Investigadores y Docentes de Ingeniería", short:"EnIDI 2026",
+    type:"UTN / UNCuyo", dateStart:new Date(2026,9,1), dateEnd:new Date(2026,9,3),
+    location:"Los Reyunos, San Rafael, Mendoza", lat:-34.6, lon:-68.3,
+    freq:"Anual",
+    deadlineAbstract:null, deadlinePaper:null,
+    channel:"enidi@frsr.utn.edu.ar",
+    web:"https://panel.enidi.org.ar",
+    templateUrl:null, templateLabel:null,
+    costARS:null, costUSD:"A confirmar",
+    costNote:"Convocatoria 2026 aún no publicada.",
+    relevance:3, status:"pending",
+    notes:"Frecuencia anual. La edición 2025 (XIII) ya se realizó. Esperar convocatoria 2026."
+  },
+  {
+    id:7, name:"2026 IEEE Biennial Congress of Argentina", short:"ARGENCON 2026",
+    type:"IEEE", dateStart:new Date(2026,10,11), dateEnd:new Date(2026,10,13),
+    location:"Córdoba, Argentina (UNC)", lat:-31.41, lon:-64.18,
+    freq:"Bienal",
+    deadlineAbstract:null, deadlinePaper:new Date(2026,5,29),
+    channel:"Microsoft CMT · attend.ieee.org/argencon-2026",
+    web:"https://attend.ieee.org/argencon-2026/",
+    templateUrl:null, templateLabel:null,
+    costARS:null, costUSD:"~USD 60–120 (IEEE member/no member)",
+    costNote:"Deadline paper 29/06/2026 (ya cerrado). ~800 asistentes. FCEFyN-UNC.",
+    relevance:3, status:"upcoming",
+    notes:"ACTUALIZADO jul: deadline papers fue 29/06/2026 vía Microsoft CMT. Track Potencia y Energía. Lema: futuro sostenible con ética. Inscripción abierta."
+  },
+  {
+    id:8, name:"IEEE URUCON 2026 — 4th IEEE Uruguay Engineering Conference", short:"URUCON 2026",
+    type:"IEEE", dateStart:new Date(2026,10,16), dateEnd:new Date(2026,10,18),
+    location:"Montevideo, Uruguay", lat:-34.9, lon:-56.2,
+    freq:"Bienal",
+    deadlineAbstract:new Date(2026,6,17), deadlinePaper:new Date(2026,9,31),
+    channel:"urucon.uy (EDAS / IEEE)",
+    web:"https://urucon.uy/",
+    templateUrl:null, templateLabel:null,
+    costARS:null, costUSD:"~USD 50–100 (estimado)",
+    costNote:"Envío inicial 17 jul · Aceptación 15 sep · Envío final 31 oct.",
+    relevance:3, status:"upcoming",
+    notes:"ACTUALIZADO jul: envío final movido a 31/10/2026. Envío inicial: 17 jul · Aceptación: 15 sep · Conferencia 16–18 nov. 450+ delegados, 12+ tracks. Patrocina UTE."
+  },
+  // Adicionales HVDC
+  {
+    id:9, name:"IEEE PES T&D Conference & Exposition 2026", short:"IEEE T&D 2026",
+    type:"IEEE", dateStart:new Date(2026,3,20), dateEnd:new Date(2026,3,23),
+    location:"Dallas, TX, EE.UU.", lat:32.78, lon:-96.8,
+    freq:"Bienal",
+    deadlineAbstract:new Date(2025,9,1), deadlinePaper:new Date(2026,0,15),
+    channel:"ieee-tdc.org · EDAS",
+    web:"https://ieee-tdc.org/",
+    templateUrl:null, templateLabel:null,
+    costARS:null, costUSD:"~USD 750–1.200 (IEEE member)",
+    costNote:"Más viaje a EE.UU. Confirmar tarifa exacta en web.",
+    relevance:5, status:"upcoming",
+    notes:"Track completo HVDC y FACTS. Referencia mundial en transmisión."
+  },
+  {
+    id:10, name:"CIGRE B4 HVDC & Power Electronics Colloquium", short:"CIGRE B4 2026",
+    type:"CIGRE", dateStart:new Date(2026,5,15), dateEnd:new Date(2026,5,18),
+    location:"Europa (sede variable)", lat:50, lon:10,
+    freq:"Irregular",
+    deadlineAbstract:null, deadlinePaper:null,
+    channel:"cigre.org / Study Committee B4",
+    web:"https://www.cigre.org/",
+    templateUrl:null, templateLabel:null,
+    costARS:null, costUSD:"A confirmar (miembro CIGRE)",
+    costNote:"Solo miembros CIGRE. Verificar convocatoria en cigre.org.",
+    relevance:5, status:"pending",
+    notes:"100% HVDC y electrónica de potencia. Máxima especialización técnica del tema del PID."
+  },
+  {
+    id:11, name:"IEEE PES General Meeting 2026", short:"IEEE PES GM 2026",
+    type:"IEEE", dateStart:new Date(2026,6,12), dateEnd:new Date(2026,6,16),
+    location:"Austin, TX, EE.UU.", lat:30.27, lon:-97.74,
+    freq:"Anual",
+    deadlineAbstract:new Date(2025,11,1), deadlinePaper:new Date(2026,1,15),
+    channel:"pes-gm.org · EDAS",
+    web:"https://pes-gm.org/",
+    templateUrl:null, templateLabel:null,
+    costARS:null, costUSD:"~USD 800–1.400 (IEEE PES member)",
+    costNote:"Mayor congreso mundial IEEE Potencia y Energía.",
+    relevance:4, status:"upcoming",
+    notes:"Mayor congreso mundial de IEEE Power & Energy Society."
+  },
+  {
+    id:12, name:"AC/DC Power Transmission – IET ACDC 2026", short:"ACDC 2026",
+    type:"IET", dateStart:new Date(2026,10,3), dateEnd:new Date(2026,10,4),
+    location:"Birmingham, Reino Unido", lat:52.48, lon:-1.9,
+    freq:"Bienal",
+    deadlineAbstract:null, deadlinePaper:null,
+    channel:"theiet.org · IET eventos",
+    web:"https://www.theiet.org/",
+    templateUrl:null, templateLabel:null,
+    costARS:null, costUSD:"~£400–700 GBP",
+    costNote:"HVDC específico. Referencia europea. Más viaje al RU.",
+    relevance:5, status:"pending",
+    notes:"Conferencia IET 100% focalizada en HVDC. Alta relevancia técnica para el PID."
+  },
+  {
+    id:13, name:"Latin America Power – IEEE Region 9", short:"LATAM Power 2026",
+    type:"IEEE", dateStart:new Date(2026,8,10), dateEnd:new Date(2026,8,12),
+    location:"Latinoamérica (sede a confirmar)", lat:-20, lon:-65,
+    freq:"Irregular",
+    deadlineAbstract:null, deadlinePaper:null,
+    channel:"r9.ieee.org",
+    web:"https://r9.ieee.org/",
+    templateUrl:null, templateLabel:null,
+    costARS:null, costUSD:"A confirmar",
+    costNote:"Fecha y sede tentativas. Confirmar en r9.ieee.org.",
+    relevance:3, status:"pending",
+    notes:"Energía regional IEEE Región 9 (América Latina)."
+  }
+].sort((a,b)=>a.dateStart-b.dateStart);
+
+const SOURCES = [
+  {id:'cittie',  name:'CITTIE 2026',       url:'https://cittie2026.frsf.utn.edu.ar/', checked:true},
+  {id:'sepope',  name:'XVI SEPOPE',         url:'https://sepope.com.br/', checked:true},
+  {id:'clagtee', name:'XVI CLAGTEE 2026',   url:'https://www.clagtee2026.org/', checked:true},
+  {id:'cigre_s', name:'CIGRE París 2026',   url:'https://session.cigre.org/', checked:true},
+  {id:'cadi',    name:'CADI–CAEDI 2026',   url:'https://confedi.org.ar/evento/cadi-caedi-2026/', checked:true},
+  {id:'enidi',   name:'EnIDI 2026',         url:'https://panel.enidi.org.ar/', checked:true},
+  {id:'argencon',name:'ARGENCON 2026',      url:'http://www.ieee.org.ar/', checked:true},
+  {id:'urucon',  name:'URUCON 2026',        url:'https://urucon.uy/', checked:true},
+  {id:'ieee_td', name:'IEEE PES T&D',       url:'https://ieee-tdc.org/', checked:false},
+  {id:'pes_gm',  name:'IEEE PES Gen Meet',  url:'https://pes-gm.org/', checked:false},
+  {id:'acdc',    name:'IET ACDC 2026',      url:'https://www.theiet.org/', checked:false},
+  {id:'cigre_b4',name:'CIGRE B4',           url:'https://www.cigre.org/', checked:false},
+];
+
+// ── GOOGLE SHEETS INTEGRATION ─────────────────────────────────────
+
+const SHEET_SCHEMA = [
+  {col:'nombre',       ex:'XVI CLAGTEE',                    note:'Nombre completo del evento'},
+  {col:'sigla',        ex:'XVI CLAGTEE',                    note:'Acrónimo corto'},
+  {col:'tipo',         ex:'Académico / IEEE / CIGRE / UTN', note:'Organización'},
+  {col:'fecha_inicio', ex:'28/10/2026',                     note:'Formato DD/MM/AAAA'},
+  {col:'fecha_fin',    ex:'30/10/2026',                     note:'Formato DD/MM/AAAA'},
+  {col:'lugar',        ex:'Santiago de Chile, Chile',       note:'Ciudad, País'},
+  {col:'lat',          ex:'-33.45',                         note:'Latitud (opcional, para el mapa)'},
+  {col:'lon',          ex:'-70.67',                         note:'Longitud (opcional, para el mapa)'},
+  {col:'frecuencia',   ex:'Bienal',                         note:'Bienal / Anual / Irregular'},
+  {col:'deadline_abstract', ex:'15/05/2026',               note:'Formato DD/MM/AAAA o vacío'},
+  {col:'deadline_paper',    ex:'01/08/2026',               note:'Formato DD/MM/AAAA o vacío'},
+  {col:'canal',        ex:'edas.info · email@congreso.org', note:'Plataforma de envío'},
+  {col:'web',          ex:'https://clagtee2026.org',        note:'URL oficial'},
+  {col:'template_url', ex:'https://...',                    note:'Link a plantilla (opcional)'},
+  {col:'template_label',ex:'Plantilla Word',               note:'Texto del botón (opcional)'},
+  {col:'costo',        ex:'~USD 100 (IEEE member)',         note:'Costo de inscripción'},
+  {col:'relevancia',   ex:'5',                              note:'Número del 1 al 5'},
+  {col:'estado',       ex:'upcoming',                       note:'upcoming / pending / done'},
+  {col:'notas',        ex:'CE-B4 HVDC. Alta relevancia.', note:'Notas adicionales'},
+];
+
+// Sheets data overrides EVENTS when connected
+let SHEETS_EVENTS = null;
+let sheetsConnected = false;
+let lastSyncTime = null;
+const GS_URL_KEY = 'hvdc_gs_url';
+
+function normKey(s){return (s||'').toString().trim().toLowerCase().replace(/\s+/g,' ');}
+function getActiveEvents(){
+  if(!SHEETS_EVENTS) return EVENTS;
+  // COMBINAR: base del archivo + Sheets, sin duplicados (clave = sigla).
+  // Los del Sheets actualizan/pisan al base si comparten sigla; los nuevos se suman.
+  const map=new Map();
+  EVENTS.forEach(e=>map.set(normKey(e.short), e));
+  SHEETS_EVENTS.forEach(e=>map.set(normKey(e.short), e));
+  return Array.from(map.values()).sort((a,b)=>{
+    const da=a.dateStart instanceof Date?a.dateStart:new Date(a.dateStart);
+    const db=b.dateStart instanceof Date?b.dateStart:new Date(b.dateStart);
+    return da-db;
+  });
+}
+function countNewFromSheets(){
+  if(!SHEETS_EVENTS) return 0;
+  const baseKeys=new Set(EVENTS.map(e=>normKey(e.short)));
+  return SHEETS_EVENTS.filter(e=>!baseKeys.has(normKey(e.short))).length;
+}
+
+function parseDDMMYYYY(s){
+  if(!s||!s.trim())return null;
+  const parts=s.trim().split('/');
+  if(parts.length!==3)return null;
+  const [d,m,y]=parts;
+  const dt=new Date(parseInt(y),parseInt(m)-1,parseInt(d));
+  return isNaN(dt.getTime())?null:dt;
+}
+
+function rowToEvent(row, idx){
+  return {
+    id: idx+1000,
+    name:     row.nombre||'Sin nombre',
+    short:    row.sigla||row.nombre||'—',
+    type:     row.tipo||'—',
+    dateStart:parseDDMMYYYY(row.fecha_inicio),
+    dateEnd:  parseDDMMYYYY(row.fecha_fin),
+    location: row.lugar||'—',
+    lat:      parseFloat(row.lat)||0,
+    lon:      parseFloat(row.lon)||0,
+    freq:     row.frecuencia||'—',
+    deadlineAbstract: parseDDMMYYYY(row.deadline_abstract),
+    deadlinePaper:    parseDDMMYYYY(row.deadline_paper),
+    channel:  row.canal||'—',
+    web:      row.web||'#',
+    templateUrl:   row.template_url||null,
+    templateLabel: row.template_label||'Template',
+    costARS:  null,
+    costUSD:  row.costo||null,
+    costNote: row.costo||'A confirmar',
+    relevance:parseInt(row.relevancia)||3,
+    status:   row.estado||'pending',
+    notes:    row.notas||'—',
+  };
+}
+
+function setSyncStatus(state, msg){
+  const dot=document.getElementById('gs-dot');
+  const lbl=document.getElementById('gs-status-text');
+  const dot2=document.getElementById('sync-dot');
+  const lbl2=document.getElementById('sync-label');
+  const states={ok:'ok',err:'err',loading:'loading'};
+  if(dot){dot.className='gs-dot '+(states[state]||'');}
+  if(dot2){dot2.className='gs-dot '+(states[state]||'');}
+  if(lbl)lbl.textContent=msg;
+  if(lbl2)lbl2.textContent=msg;
+}
+
+function showSyncBar(pct){
+  const bar=document.getElementById('sync-bar');
+  const fill=document.getElementById('sync-bar-fill');
+  if(bar)bar.style.display='block';
+  if(fill)fill.style.width=pct+'%';
+}
+function hideSyncBar(){
+  const bar=document.getElementById('sync-bar');
+  setTimeout(()=>{if(bar)bar.style.display='none';},600);
+}
+
+async function connectSheets(){
+  const url=document.getElementById('gs-url').value.trim();
+  if(!url){toast('Pegá la URL de tu Google Sheets primero','red');return;}
+  localStorage.setItem(GS_URL_KEY,url);
+  await fetchSheets(url);
+}
+
+async function syncFromSheets(){
+  const url=localStorage.getItem(GS_URL_KEY)||document.getElementById('gs-url')?.value?.trim();
+  if(!url){toast('Primero conectá un Google Sheets en la pestaña "Google Sheets"','red');showSection('sheets');return;}
+  await fetchSheets(url);
+}
+
+async function fetchSheets(url){
+  setSyncStatus('loading','Sincronizando…');
+  showSyncBar(20);
+  const btn=document.getElementById('sync-btn');
+  if(btn)btn.disabled=true;
+
+  // Build proper JSON URL from any GSheets URL
+  let jsonUrl=url;
+  if(url.includes('/edit')||url.includes('/pub')||url.includes('spreadsheets/d/')){
+    const idMatch=url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    const sheetMatch=url.match(/[?&]sheet=([^&]+)/)||url.match(/gid=(\d+)/);
+    if(idMatch){
+      const sheetParam=sheetMatch?`&sheet=${sheetMatch[1]}`:'';
+      jsonUrl=`https://docs.google.com/spreadsheets/d/${idMatch[1]}/gviz/tq?tqx=out:json${sheetParam}`;
+    }
+  }
+
+  try{
+    showSyncBar(50);
+    const resp=await fetch(jsonUrl);
+    if(!resp.ok)throw new Error(`HTTP ${resp.status}`);
+    const text=await resp.text();
+    showSyncBar(80);
+    // GViz returns: /*O_o*/\ngoogle.visualization.Query.setResponse({...});
+    const jsonStr=text.replace(/^[^{]*/, '').replace(/\);?\s*$/, '');
+    const data=JSON.parse(jsonStr);
+    const table=data.table;
+    if(!table||!table.rows)throw new Error('Formato de planilla incorrecto');
+
+    // Extract headers from first row
+    const headers=table.cols.map(c=>(c.label||c.id||'').toLowerCase().replace(/\s+/g,'_').trim());
+
+    // Map rows to events
+    const events=[];
+    table.rows.forEach((row,i)=>{
+      const obj={};
+      headers.forEach((h,j)=>{
+        const cell=row.c&&row.c[j];
+        obj[h]=cell?(cell.f||cell.v||''):'';
+        if(obj[h]===null||obj[h]===undefined)obj[h]='';
+        obj[h]=String(obj[h]).trim();
+      });
+      if(obj.nombre||obj.sigla){
+        const ev=rowToEvent(obj,i);
+        if(ev.dateStart)events.push(ev);
+      }
+    });
+
+    if(!events.length)throw new Error('No se encontraron filas con datos válidos. Verificá que la hoja tenga los encabezados correctos.');
+
+    SHEETS_EVENTS=events.sort((a,b)=>a.dateStart-b.dateStart);
+    sheetsConnected=true;
+    lastSyncTime=new Date();
+    showSyncBar(100);
+
+    const total=getActiveEvents().length;
+    const nuevos=countNewFromSheets();
+
+    // Update stats
+    const stats=document.getElementById('gs-stats');
+    if(stats){
+      stats.style.display='flex';
+      document.getElementById('gs-ev-count').textContent=`${total} (base + ${nuevos} nuevos de Sheets)`;
+      document.getElementById('gs-last-sync').textContent=lastSyncTime.toLocaleTimeString('es-AR');
+      document.getElementById('gs-sheet-name').textContent='Google Sheets';
+    }
+
+    // Update preview
+    renderSheetsPreview();
+    setSyncStatus('ok',`${total} eventos ✓`);
+    toast(`${total} eventos en total · ${nuevos} nuevos sumados desde Sheets`,'ok');
+
+    // Refresh all views
+    renderOverview();
+    renderTableRows();
+    hideSyncBar();
+
+  }catch(err){
+    setSyncStatus('err','Error de conexión');
+    toast('Error: '+err.message,'red');
+    hideSyncBar();
+    console.error(err);
+  }finally{
+    if(btn)btn.disabled=false;
+  }
+}
+
+function renderSheetsPreview(){
+  const evs=getActiveEvents();
+  const baseKeys=new Set(EVENTS.map(e=>normKey(e.short)));
+  const sheetKeys=new Set((SHEETS_EVENTS||[]).map(e=>normKey(e.short)));
+  const preview=document.getElementById('gs-preview-card');
+  const body=document.getElementById('gs-preview-body');
+  const cnt=document.getElementById('gs-preview-count');
+  if(!preview||!body)return;
+  preview.style.display='block';
+  if(cnt)cnt.textContent=evs.length+' eventos combinados';
+  body.innerHTML='';
+  evs.forEach(ev=>{
+    const k=normKey(ev.short);
+    const fromSheet=sheetKeys.has(k);
+    const inBase=baseKeys.has(k);
+    let tag='';
+    if(fromSheet&&inBase) tag='<span class="eli-tag" style="background:rgba(245,166,35,.12);color:var(--gold2);border:1px solid rgba(245,166,35,.2);font-size:8px;padding:1px 5px;border-radius:3px">SHEETS↻</span>';
+    else if(fromSheet) tag='<span class="eli-tag" style="background:rgba(17,205,239,.12);color:var(--teal);border:1px solid rgba(17,205,239,.2);font-size:8px;padding:1px 5px;border-radius:3px">+NUEVO</span>';
+    else tag='<span class="eli-tag" style="background:rgba(76,140,245,.1);color:var(--accent2);border:1px solid rgba(76,140,245,.15);font-size:8px;padding:1px 5px;border-radius:3px">BASE</span>';
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><div class="td-name" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ev.name}</div></td>
+      <td><span class="td-acro">${ev.short}</span> ${tag}</td>
+      <td class="td-date">${fmtD(ev.dateStart)}</td>
+      <td style="font-size:10px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ev.location}</td>
+      <td class="td-date">${fmtD(ev.deadlinePaper)}</td>
+      <td style="font-size:10px">${ev.costUSD||ev.costARS||'—'}</td>
+      <td>${relBar(ev.relevance)}</td>
+      <td>${statusBadge(ev)}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function renderSchemaTable(){
+  const tbody=document.getElementById('schema-table');
+  if(!tbody)return;
+  tbody.innerHTML='';
+  SHEET_SCHEMA.forEach(({col,ex,note})=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><code style="font-family:var(--mono);font-size:10px;color:var(--teal)">${col}</code></td>
+      <td style="font-size:10px;color:var(--text2)">${ex}</td>
+      <td style="font-size:10px;color:var(--text3)">${note}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────
+const TITLES={overview:'Resumen General',calendario:'Calendario 2026',gantt:'Timeline / Gantt',deadlines:'Deadlines 2026',mapa:'Mapa Geográfico',actualizador:'Actualizador con IA',sheets:'Google Sheets / GitHub Pages'};
+function daysUntil(d){if(!d)return null;return Math.ceil((d-TODAY)/86400000);}
+function fmtD(d){if(!d)return'—';const dd=String(d.getDate()).padStart(2,'0'),mm=String(d.getMonth()+1).padStart(2,'0'),yy=String(d.getFullYear()).slice(2);return`${dd}/${mm}/${yy}`;}
+function statusBadge(ev){
+  if(ev.status==='done')return'<span class="badge done">Realizado</span>';
+  const dp=daysUntil(ev.deadlinePaper);
+  if(dp!==null&&dp>=0&&dp<=14)return'<span class="badge urgent">🚨 CRÍTICO</span>';
+  if(dp!==null&&dp>=0&&dp<=45)return'<span class="badge urgent">⚠ Urgente</span>';
+  if(ev.status==='upcoming')return'<span class="badge soon">Próximo</span>';
+  return'<span class="badge pending">Pendiente</span>';
+}
+function relBar(n){let h='<div class="rel-bar">';for(let i=1;i<=5;i++)h+=`<div class="rel-seg${i<=n?' on':''}"></div>`;return h+'</div>';}
+function toast(msg,type='ok'){const el=document.createElement('div');el.className=`toast ${type}`;el.innerHTML=`<span style="font-size:14px">${type==='ok'?'✓':type==='red'?'✕':'⏳'}</span><span>${msg}</span>`;document.getElementById('toast-area').appendChild(el);setTimeout(()=>el.remove(),4000);}
+
+// ── NAV ───────────────────────────────────────────────────────────
+function showSection(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
+  document.getElementById('section-'+id).classList.add('active');
+  document.querySelector(`[onclick="showSection('${id}')"]`).classList.add('active');
+  document.getElementById('page-title').textContent=TITLES[id]||id;
+  document.getElementById('page-sub').textContent=sheetsConnected?`Combinado: ${getActiveEvents().length} eventos (base + Sheets) · v5.1`:'v5.1 · Google Sheets';
+  if(id==='gantt')renderGantt();
+  if(id==='mapa')renderMap();
+  if(id==='deadlines')renderDeadlines();
+  if(id==='actualizador')renderSources();
+  if(id==='sheets'){renderSchemaTable();}
+}
+
+// ── OVERVIEW ──────────────────────────────────────────────────────
+function renderOverview(){
+  const evs=getActiveEvents();
+  const up90=evs.filter(e=>{const d=daysUntil(e.dateStart);return d!==null&&d>=0&&d<=90;}).length;
+  const urg=evs.filter(e=>{const d=daysUntil(e.deadlinePaper);return d!==null&&d>=0&&d<=45;}).length;
+  const rel5=evs.filter(e=>e.relevance>=4).length;
+  document.getElementById('kpi-total').textContent=evs.length;
+  document.getElementById('kpi-upcoming').textContent=up90;
+  document.getElementById('kpi-urgent').textContent=urg;
+  document.getElementById('kpi-rel5').textContent=rel5;
+  document.getElementById('badge-upcoming').textContent=up90;
+  document.getElementById('badge-urgent').textContent=urg;
+
+  // Timeline
+  const tl=document.getElementById('timeline-upcoming');
+  tl.innerHTML='';
+  [...evs].filter(e=>{const d=daysUntil(e.dateStart);return d!==null&&d>=-10;}).slice(0,7).forEach(ev=>{
+    const d=daysUntil(ev.dateStart);
+    const col=d<0?'#50597a':d<60?'#f5a623':d<120?'#4c8cf5':'#8965e0';
+    const el=document.createElement('div');el.className='tl-item';el.onclick=()=>openModal(ev.id);
+    el.innerHTML=`<div class="tl-dot" style="background:${col}"></div><div class="tl-content"><div class="tl-title">${ev.short}</div><div class="tl-meta">${ev.location.split(',')[0]}</div></div><div class="tl-date">${fmtD(ev.dateStart)}</div>`;
+    tl.appendChild(el);
+  });
+
+  // Urgency
+  const ul=document.getElementById('urgency-list');ul.innerHTML='';
+  evs.map(e=>({ev:e,d:daysUntil(e.deadlinePaper)})).filter(x=>x.d!==null&&x.d>=0).sort((a,b)=>a.d-b.d).slice(0,5).forEach(({ev,d})=>{
+    const pct=Math.max(0,Math.min(100,100-d/180*100));
+    const col=d<14?'var(--red)':d<45?'var(--orange)':d<90?'var(--gold)':'var(--green)';
+    const el=document.createElement('div');el.className='urgency-item';
+    el.innerHTML=`<div class="urgency-top"><div class="urgency-name">${ev.short}</div><div class="urgency-days" style="color:${col}">${d}d</div></div><div class="urgency-bar-bg"><div class="urgency-bar-fill" style="width:${pct}%;background:${col}"></div></div>`;
+    ul.appendChild(el);
+  });
+
+  renderCharts();
+}
+
+let _chartRel=null,_chartReg=null;
+function renderCharts(){
+  const evs=getActiveEvents();
+  const rc=[0,0,0,0,0];evs.forEach(e=>rc[Math.min(4,Math.max(0,(e.relevance||1)-1))]++);
+  const ctx1=document.getElementById('chart-relevance').getContext('2d');
+  if(_chartRel)_chartRel.destroy();
+  _chartRel=new Chart(ctx1,{type:'doughnut',data:{labels:['★','★★','★★★','★★★★','★★★★★'],datasets:[{data:rc,backgroundColor:['#1c2840','#2a3555','#8965e0','#f5a623','#4c8cf5'],borderWidth:0,hoverOffset:5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},cutout:'65%'}});
+  const rd={Argentina:evs.filter(e=>e.location.includes('Argentina')).length,Brasil:evs.filter(e=>e.location.includes('Brasil')).length,'EE.UU.':evs.filter(e=>e.location.includes('EE.UU')).length,Europa:evs.filter(e=>e.location.includes('Francia')||e.location.includes('Reino')||e.location.includes('Europa')).length,Uruguay:evs.filter(e=>e.location.includes('Uruguay')).length,Chile:evs.filter(e=>e.location.includes('Chile')).length,Otro:evs.filter(e=>!e.location.includes('Argentina')&&!e.location.includes('Brasil')&&!e.location.includes('EE.UU')&&!e.location.includes('Francia')&&!e.location.includes('Reino')&&!e.location.includes('Europa')&&!e.location.includes('Uruguay')&&!e.location.includes('Chile')).length};
+  const ctx2=document.getElementById('chart-region').getContext('2d');
+  if(_chartReg)_chartReg.destroy();
+  _chartReg=new Chart(ctx2,{type:'bar',data:{labels:Object.keys(rd),datasets:[{data:Object.values(rd),backgroundColor:'rgba(76,140,245,.6)',borderColor:'rgba(76,140,245,.9)',borderWidth:1,borderRadius:3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{color:'#50597a',font:{size:9}},grid:{color:'rgba(255,255,255,.04)'}},x:{ticks:{color:'#8b93ad',font:{size:9}},grid:{display:false}}}}});
+}
+
+// ── CALENDARIO ────────────────────────────────────────────────────
+let activeFilter='all';
+function renderCalendar(){
+  const fb=document.getElementById('filter-bar');
+  if(!fb.children.length){
+    [{id:'all',l:'Todos'},{id:'upcoming',l:'Próximos'},{id:'urgent',l:'⚠ Urgentes'},{id:'pending',l:'Pendientes'},{id:'hvdc5',l:'★★★★★ HVDC'}].forEach(f=>{
+      const b=document.createElement('button');b.className='fb'+(f.id==='all'?' active':'');b.textContent=f.l;
+      b.onclick=()=>{document.querySelectorAll('.fb').forEach(x=>x.classList.remove('active'));b.classList.add('active');activeFilter=f.id;renderTableRows();};
+      fb.appendChild(b);
+    });
+  }
+  renderTableRows();
+}
+
+function renderTableRows(){
+  let evs=[...getActiveEvents()];
+  if(activeFilter==='upcoming')evs=evs.filter(e=>e.status==='upcoming');
+  else if(activeFilter==='urgent')evs=evs.filter(e=>{const d=daysUntil(e.deadlinePaper);return d!==null&&d>=0&&d<=45;});
+  else if(activeFilter==='pending')evs=evs.filter(e=>e.status==='pending');
+  else if(activeFilter==='hvdc5')evs=evs.filter(e=>e.relevance===5);
+
+  const tbody=document.getElementById('table-body');tbody.innerHTML='';
+  evs.forEach(ev=>{
+    const dp=daysUntil(ev.deadlinePaper);
+    const dCol=dp!==null&&dp>=0&&dp<=14?'var(--red)':dp!==null&&dp>=0&&dp<=45?'var(--orange)':'var(--text2)';
+    const tplHtml=ev.templateUrl?`<a href="${ev.templateUrl}" target="_blank" class="template-btn">${ev.templateLabel||'Template'} ↗</a>${ev.templateUrl2?`<br><a href="${ev.templateUrl2}" target="_blank" class="template-btn">${ev.templateLabel2} ↗</a>`:''}`:
+    '<span style="font-size:10px;color:var(--text3)">— a publicar</span>';
+    const costHtml=ev.costARS?`<span class="cost-low">${ev.costARS.split('\n')[0]}</span><br><span style="font-size:9px;color:var(--text3)">${ev.costNote||''}</span>`:
+    ev.costUSD?`<span class="cost-mid">${ev.costUSD}</span><br><span style="font-size:9px;color:var(--text3)">${ev.costNote||''}</span>`:
+    `<span class="cost-unknown">A confirmar</span>`;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><div class="td-name">${ev.name.length>48?ev.name.substring(0,46)+'…':ev.name}</div><div style="font-size:9px;color:var(--text3);margin-top:1px">${ev.type}</div></td>
+      <td><span class="td-acro">${ev.short}</span></td>
+      <td><span class="td-date">${fmtD(ev.dateStart)}</span><br><span style="font-size:9px;color:var(--text3)">${fmtD(ev.dateEnd)}</span></td>
+      <td style="font-size:10px;max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ev.location}</td>
+      <td class="td-date">${fmtD(ev.deadlineAbstract)}</td>
+      <td class="td-date" style="color:${dCol}">${fmtD(ev.deadlinePaper)}${dp!==null&&dp>=0?`<br><span style="font-size:9px">${dp}d</span>`:''}</td>
+      <td>${tplHtml}</td>
+      <td style="max-width:160px">${costHtml}</td>
+      <td>${relBar(ev.relevance)}</td>
+      <td>${statusBadge(ev)}</td>
+      <td><a href="${ev.web}" target="_blank" class="link-btn">Web ↗</a><br><button class="btn" style="padding:3px 7px;font-size:9px;margin-top:3px" onclick="openModal(${ev.id})">Ver más</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── GANTT ─────────────────────────────────────────────────────────
+function renderGantt(){
+  const c=document.getElementById('gantt-container');c.innerHTML='';
+  const MONTHS=['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const totalMonths=12;
+  function pct(d){const m=(d.getMonth())+(d.getDate()-1)/30;return Math.max(0,Math.min(100,m/totalMonths*100));}
+
+  const hdr=document.createElement('div');hdr.className='gantt-header';
+  MONTHS.forEach((m,i)=>{const d=document.createElement('div');d.className='gantt-month';d.textContent=m;hdr.appendChild(d);});
+  c.appendChild(hdr);
+
+  function bgLines(track){
+    for(let i=0;i<=12;i++){const l=document.createElement('div');l.className='gantt-bg';l.style.left=(i/12*100)+'%';track.appendChild(l);}
+    const tp=pct(TODAY);if(tp>=0&&tp<=100){const tl=document.createElement('div');tl.className='today-line';tl.style.left=tp+'%';track.appendChild(tl);}
+  }
+
+  getActiveEvents().forEach(ev=>{
+    const row=document.createElement('div');row.className='gantt-row';
+    const lbl=document.createElement('div');lbl.className='gantt-label';lbl.textContent=ev.short;lbl.title=ev.name;row.appendChild(lbl);
+    const track=document.createElement('div');track.className='gantt-track';bgLines(track);
+    const left=pct(ev.dateStart),right=pct(ev.dateEnd),width=Math.max(right-left,0.5);
+    const col=ev.status==='upcoming'?'#f5a623':'#6b5acd';
+    const bar=document.createElement('div');bar.className='gantt-bar';
+    bar.style.cssText=`left:${left}%;width:${width}%;background:${col}`;
+    bar.textContent=width>5?ev.short:'';bar.title=ev.name;bar.onclick=()=>openModal(ev.id);
+    track.appendChild(bar);
+    if(ev.deadlinePaper){const dp=pct(ev.deadlinePaper);if(dp>=0&&dp<=100){const dl=document.createElement('div');dl.className='gantt-deadline';dl.style.left=dp+'%';dl.title='Deadline: '+fmtD(ev.deadlinePaper);track.appendChild(dl);}}
+    row.appendChild(track);c.appendChild(row);
+  });
+}
+
+// ── DEADLINES ─────────────────────────────────────────────────────
+function renderDeadlines(){
+  const tbody=document.getElementById('deadline-tbody');tbody.innerHTML='';
+  const items=[];
+  getActiveEvents().forEach(ev=>{
+    if(ev.deadlineAbstract)items.push({ev,hito:'Abstract',date:ev.deadlineAbstract,d:daysUntil(ev.deadlineAbstract)});
+    if(ev.deadlinePaper)items.push({ev,hito:'Paper Completo',date:ev.deadlinePaper,d:daysUntil(ev.deadlinePaper)});
+  });
+  items.sort((a,b)=>{if(a.d===null&&b.d===null)return 0;if(a.d===null)return 1;if(b.d===null)return-1;return a.d-b.d;});
+  items.forEach(({ev,hito,date,d})=>{
+    let badge,col;
+    if(d===null){badge='<span class="badge pending">A confirmar</span>';col='var(--text3)';}
+    else if(d<0){badge='<span class="badge done">Pasado</span>';col='var(--text3)';}
+    else if(d<=7){badge='<span class="badge urgent">🚨 CRÍTICO</span>';col='var(--red)';}
+    else if(d<=45){badge='<span class="badge urgent">⚠ Urgente</span>';col='var(--orange)';}
+    else if(d<=90){badge='<span class="badge soon">Próximo</span>';col='var(--gold)';}
+    else{badge='<span class="badge ok">OK</span>';col='var(--green)';}
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><span class="td-acro" style="cursor:pointer" onclick="openModal(${ev.id})">${ev.short}</span></td><td style="color:var(--text);font-size:11px">${hito}</td><td class="td-date" style="color:${col}">${fmtD(date)}</td><td style="font-family:var(--mono);font-size:12px;font-weight:500;color:${col};text-align:center">${d!==null?d+'d':'—'}</td><td style="font-size:10px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ev.channel}</td><td>${badge}</td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── MAPA ──────────────────────────────────────────────────────────
+function renderMap(){
+  const canvas=document.getElementById('map-canvas');
+  const ctx=canvas.getContext('2d');const W=canvas.width,H=canvas.height;
+  ctx.fillStyle='#0d1526';ctx.fillRect(0,0,W,H);
+  function project(lat,lon){const x=((lon+180)/360)*W;const latR=lat*Math.PI/180;const mN=Math.log(Math.tan(Math.PI/4+latR/2));const y=H/2-(H*mN)/(2*Math.PI);return[x,y];}
+  ctx.strokeStyle='rgba(255,255,255,.03)';ctx.lineWidth=.5;
+  for(let lat=-80;lat<=80;lat+=20){ctx.beginPath();const[,y]=project(lat,0);ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  for(let lon=-180;lon<=180;lon+=30){ctx.beginPath();const[x]=project(0,lon);ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  const regions=[
+    {color:'rgba(76,140,245,.1)',pts:[[-3,-80],[-34,-73],[-55,-68],[-55,-64],[-38,-57],[-24,-44],[-5,-35],[5,-52],[10,-61],[-3,-80]]},
+    {color:'rgba(76,140,245,.07)',pts:[[25,-80],[25,-110],[45,-120],[60,-140],[70,-135],[72,-95],[60,-65],[45,-60],[30,-80],[25,-80]]},
+    {color:'rgba(137,101,224,.09)',pts:[[36,10],[36,-5],[48,-5],[58,-3],[60,5],[55,25],[48,30],[40,28],[36,28],[36,10]]},
+    {color:'rgba(76,140,245,.05)',pts:[[37,-5],[15,-20],[-35,20],[-34,26],[5,40],[11,44],[20,40],[37,30],[37,-5]]},
+  ];
+  regions.forEach(r=>{ctx.beginPath();r.pts.forEach(([lat,lon],i)=>{const[x,y]=project(lat,lon);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});ctx.fillStyle=r.color;ctx.fill();ctx.strokeStyle='rgba(255,255,255,.05)';ctx.lineWidth=.5;ctx.stroke();});
+
+  getActiveEvents().forEach(ev=>{
+    const[x,y]=project(ev.lat,ev.lon);
+    const col=ev.relevance===5?'#f5a623':ev.relevance>=4?'#4c8cf5':'#8965e0';
+    const r=ev.relevance===5?9:ev.relevance>=4?7:5;
+    ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle=col+'30';ctx.fill();
+    ctx.beginPath();ctx.arc(x,y,r*.5,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();
+    ctx.fillStyle='rgba(255,255,255,.8)';ctx.font='bold 8px DM Sans,sans-serif';
+    ctx.fillText(ev.short.split(' ')[0],x+r+2,y+3);
+  });
+
+  const leg=document.getElementById('map-legend');leg.innerHTML='';
+  [{col:'#f5a623',l:'Rel. ★★★★★'},{col:'#4c8cf5',l:'Rel. ★★★★'},{col:'#8965e0',l:'Rel. ★★★'}].forEach(({col,l})=>{
+    const el=document.createElement('div');el.className='map-legend-item';
+    el.innerHTML=`<div class="map-dot" style="background:${col}"></div><span>${l}</span>`;leg.appendChild(el);
+  });
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────
+function openModal(id){
+  const ev=EVENTS.find(e=>e.id===id);if(!ev)return;
+  const dp=daysUntil(ev.deadlinePaper),ds=daysUntil(ev.dateStart);
+  document.getElementById('modal-inner').innerHTML=`
+    <div style="margin-bottom:12px">${statusBadge(ev)} <span style="margin-left:6px">${relBar(ev.relevance)}</span></div>
+    <div class="modal-title">${ev.name}</div>
+    <div style="font-size:11px;color:var(--text2);margin-bottom:14px">${ev.short} · ${ev.type} · ${ev.freq}</div>
+    <div class="detail-grid" style="margin-bottom:14px">
+      <div class="detail-item"><div class="detail-lbl">Realización</div><div class="detail-val">${fmtD(ev.dateStart)} – ${fmtD(ev.dateEnd)}</div></div>
+      <div class="detail-item"><div class="detail-lbl">Lugar</div><div class="detail-val">${ev.location}</div></div>
+      <div class="detail-item"><div class="detail-lbl">D. Abstract</div><div class="detail-val" style="color:${daysUntil(ev.deadlineAbstract)!==null&&daysUntil(ev.deadlineAbstract)>=0&&daysUntil(ev.deadlineAbstract)<=30?'var(--red)':'inherit'}">${fmtD(ev.deadlineAbstract)}</div></div>
+      <div class="detail-item"><div class="detail-lbl">D. Paper Completo</div><div class="detail-val" style="color:${dp!==null&&dp>=0&&dp<=45?'var(--red)':'inherit'}">${fmtD(ev.deadlinePaper)}${dp!==null&&dp>=0?` <span style="font-size:10px;color:var(--gold)">(${dp}d)</span>`:''}</div></div>
+      <div class="detail-item"><div class="detail-lbl">Días al evento</div><div class="detail-val" style="color:${ds!==null&&ds>=0?'var(--accent2)':'var(--text3)'}">${ds!==null&&ds>=0?ds+'d':'Pasado'}</div></div>
+      <div class="detail-item"><div class="detail-lbl">Costo inscripción</div><div class="detail-val" style="font-size:10px">${ev.costARS||ev.costUSD||'A confirmar'}<br><span style="color:var(--text3);font-size:9px">${ev.costNote||''}</span></div></div>
+    </div>
+    ${ev.templateUrl?`<div class="modal-section"><div class="modal-label">Templates</div><div style="display:flex;gap:7px;flex-wrap:wrap"><a href="${ev.templateUrl}" target="_blank" class="template-btn">${ev.templateLabel} ↗</a>${ev.templateUrl2?`<a href="${ev.templateUrl2}" target="_blank" class="template-btn">${ev.templateLabel2} ↗</a>`:''}</div></div>`:''}
+    <div class="modal-section"><div class="modal-label">Canal de envío</div><div style="font-family:var(--mono);font-size:11px;color:var(--text)">${ev.channel}</div></div>
+    <div class="modal-section"><div class="modal-label">Notas</div><div style="font-size:11px;color:var(--text)">${ev.notes}</div></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <a href="${ev.web}" target="_blank" class="btn primary" style="text-decoration:none;font-size:11px">Ir al sitio oficial ↗</a>
+      <button class="btn" onclick="document.getElementById('modal-overlay').classList.remove('open')">Cerrar</button>
+    </div>`;
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal(e){if(e.target.id==='modal-overlay')document.getElementById('modal-overlay').classList.remove('open');}
+
+// ── AI UPDATER ────────────────────────────────────────────────────
+function renderSources(){
+  const g=document.getElementById('sources-grid');if(g.children.length)return;
+  SOURCES.forEach(s=>{
+    const el=document.createElement('div');el.className='sc'+(s.checked?' sel':'');el.id='chip-'+s.id;el.onclick=()=>toggleSource(s.id,el);
+    el.innerHTML=`<div class="sc-cb">${s.checked?'✓':''}</div><div class="sc-name">${s.name}</div>`;g.appendChild(el);
+  });
+}
+function toggleSource(id,el){const s=SOURCES.find(x=>x.id===id);s.checked=!s.checked;el.classList.toggle('sel');el.querySelector('.sc-cb').textContent=s.checked?'✓':'';}
+function selectAllSources(){SOURCES.forEach(s=>{s.checked=true;const el=document.getElementById('chip-'+s.id);if(el){el.classList.add('sel');el.querySelector('.sc-cb').textContent='✓';}});}
+function addLog(msg,type='info'){const log=document.getElementById('ai-log');const now=new Date();const t=now.toTimeString().slice(0,8);const l=document.createElement('div');l.className='log-line';l.innerHTML=`<span class="log-time">${t}</span><span class="log-${type}">${msg}</span>`;log.appendChild(l);log.scrollTop=log.scrollHeight;}
+
+let schedulerTimer=null;
+function scheduleUpdater(){
+  const days=parseInt(document.getElementById('interval-select').value);
+  if(schedulerTimer){clearInterval(schedulerTimer);schedulerTimer=null;}
+  if(days===0){document.getElementById('scheduler-status').textContent='Manual';document.getElementById('scheduler-status').className='badge pending';addLog('Modo manual configurado.','info');toast('Modo manual');return;}
+  const ms=days*24*60*60*1000;schedulerTimer=setInterval(runUpdateNow,ms);
+  document.getElementById('scheduler-status').textContent=`Cada ${days}d`;
+  document.getElementById('scheduler-status').className='badge ok';
+  addLog(`Actualización programada cada ${days} días.`,'ok');toast(`Programado cada ${days} días`,'ok');
+}
+
+async function runUpdateNow(){
+  const key=document.getElementById('api-key-input').value.trim();
+  if(!key){addLog('Error: ingresá tu API key de Anthropic.','err');toast('Falta la API key','red');document.getElementById('api-key-input').focus();return;}
+  const sel=SOURCES.filter(s=>s.checked);
+  if(!sel.length){addLog('Error: seleccioná al menos una fuente.','err');return;}
+  const btn=document.getElementById('run-now-btn');btn.disabled=true;btn.textContent='Analizando…';
+  addLog(`Iniciando análisis de ${sel.length} fuentes para 2026…`,'info');
+  const srcList=sel.map(s=>`- ${s.name}: ${s.url}`).join('\n');
+  const prompt=`Sos un asistente especializado en congresos y eventos del sector eléctrico, con foco en HVDC (High Voltage Direct Current).
+
+Proyecto: "Determinación técnica y económica del equipamiento para el nuevo vínculo HVDC Patagonia-GBA" (500 kV CC, Argentina).
+
+Por favor ANALIZÁ las siguientes webs y reportá SOLO información de eventos 2026 con:
+1. Fechas confirmadas de realización
+2. Deadline abstract (si aplica)  
+3. Deadline paper completo
+4. Costo de inscripción (en la moneda que aparezca)
+5. Link a templates o guías para autores
+6. Canal/plataforma de envío
+7. Novedades relevantes para HVDC
+
+FUENTES:
+${srcList}
+
+Fecha actual: ${TODAY.toLocaleDateString('es-AR')}
+
+Estructurá la respuesta por congreso. Indicá CONFIRMADO vs ESTIMADO. Enfocate en datos accionables.`;
+  try{
+    addLog('Consultando Claude API…','info');
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:2000,messages:[{role:'user',content:prompt}]})});
+    if(!resp.ok){const err=await resp.json().catch(()=>({}));throw new Error(err.error?.message||`HTTP ${resp.status}`);}
+    const data=await resp.json();
+    const result=data.content?.map(c=>c.text||'').join('')||'Sin respuesta';
+    addLog('Análisis completado.','ok');addLog(`Tokens: ${data.usage?.input_tokens||'?'} in / ${data.usage?.output_tokens||'?'} out`,'info');
+    const panel=document.getElementById('results-panel');panel.style.display='block';
+    document.getElementById('results-date').textContent=new Date().toLocaleString('es-AR');
+    document.getElementById('results-content').textContent=result;
+    document.getElementById('last-update-text').textContent='Actualizado: '+new Date().toLocaleString('es-AR',{day:'2-digit',month:'short',year:'numeric'});
+    toast('Análisis completado','ok');
+  }catch(e){addLog(`Error: ${e.message}`,'err');toast('Error: '+e.message,'red');}
+  finally{btn.disabled=false;btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polygon points="5 3 19 12 5 21 5 3"/></svg>Actualizar ahora';}
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────
+function exportCSV(){
+  const h=['Congreso','Sigla','Tipo','Fecha Inicio','Fecha Fin','Lugar','D.Abstract','D.Paper','Costo','Web','Template','Relevancia','Estado'];
+  const rows=EVENTS.map(e=>[e.name,e.short,e.type,fmtD(e.dateStart),fmtD(e.dateEnd),e.location,fmtD(e.deadlineAbstract),fmtD(e.deadlinePaper),e.costARS||e.costUSD||'A confirmar',e.web,e.templateUrl||'—',e.relevance+'★',e.status]);
+  const csv=[h,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download='calendario_hvdc_2026.csv';a.click();toast('CSV exportado','ok');
+}
+
+// ── INIT ──────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded',async()=>{
+  renderOverview();
+  renderCalendar();
+  // Restore saved Sheets URL if any
+  const savedUrl=localStorage.getItem(GS_URL_KEY);
+  if(savedUrl){
+    const inp=document.getElementById('gs-url');
+    if(inp)inp.value=savedUrl;
+    setSyncStatus('loading','Reconectando…');
+    await fetchSheets(savedUrl);
+  }
+});
+</script>
+</body>
+</html>
