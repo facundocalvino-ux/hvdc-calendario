@@ -1295,7 +1295,7 @@ function renderMap(){
 
 // ── MODAL ─────────────────────────────────────────────────────────
 function openModal(id){
-  const ev=EVENTS.find(e=>e.id===id);if(!ev)return;
+  const ev=getActiveEvents().find(e=>e.id===id);if(!ev)return;
   const dp=daysUntil(ev.deadlinePaper),ds=daysUntil(ev.dateStart);
   document.getElementById('modal-inner').innerHTML=`
     <div style="margin-bottom:12px">${statusBadge(ev)} <span style="margin-left:6px">${relBar(ev.relevance)}</span></div>
@@ -1389,7 +1389,7 @@ Estructurá la respuesta por congreso. Indicá CONFIRMADO vs ESTIMADO. Enfocate 
 // ── EXPORT ────────────────────────────────────────────────────────
 function exportCSV(){
   const h=['Congreso','Sigla','Tipo','Fecha Inicio','Fecha Fin','Lugar','D.Abstract','D.Paper','Costo','Web','Template','Relevancia','Estado'];
-  const rows=EVENTS.map(e=>[e.name,e.short,e.type,fmtD(e.dateStart),fmtD(e.dateEnd),e.location,fmtD(e.deadlineAbstract),fmtD(e.deadlinePaper),e.costARS||e.costUSD||'A confirmar',e.web,e.templateUrl||'—',e.relevance+'★',e.status]);
+  const rows=getActiveEvents().map(e=>[e.name,e.short,e.type,fmtD(e.dateStart),fmtD(e.dateEnd),e.location,fmtD(e.deadlineAbstract),fmtD(e.deadlinePaper),e.costARS||e.costUSD||'A confirmar',e.web,e.templateUrl||'—',e.relevance+'★',e.status]);
   const csv=[h,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download='calendario_hvdc_2026.csv';a.click();toast('CSV exportado','ok');
 }
