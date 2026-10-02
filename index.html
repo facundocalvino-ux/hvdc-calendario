@@ -265,7 +265,7 @@ tr:hover td{background:rgba(255,255,255,.015);}
 <aside class="sidebar">
   <div class="logo-area">
     <div class="logo-badge"><div class="logo-dot">H</div><span class="logo-text">HVDC TRACKER</span></div>
-    <div class="logo-title">PID Patagonia–GBA<br>Congresos 2026 · v5.1</div>
+    <div class="logo-title">PID Patagonia–GBA<br>Congresos 2026 · v5.2</div>
   </div>
   <nav class="nav">
     <div class="ns">Vistas</div>
@@ -302,14 +302,14 @@ tr:hover td{background:rgba(255,255,255,.015);}
     </div>
   </nav>
   <div class="sidebar-bottom">
-    <div class="pulse-row"><div class="pulse"></div><span id="last-update-text">Actualizado: 14 Jul 2026</span></div>
+    <div class="pulse-row"><div class="pulse"></div><span id="last-update-text">Actualizado: 2 Oct 2026</span></div>
   </div>
 </aside>
 
 <!-- MAIN -->
 <main class="main">
   <div class="topbar">
-    <div><span class="page-title" id="page-title">Resumen General</span><span class="page-sub" id="page-sub">v5.0 · Google Sheets</span></div>
+    <div><span class="page-title" id="page-title">Resumen General</span><span class="page-sub" id="page-sub">v5.2 · Google Sheets</span></div>
     <div class="topbar-actions">
       <span id="sync-status-bar" class="gs-status"><span class="gs-dot" id="sync-dot"></span><span id="sync-label">Sin conectar</span></span>
       <button class="btn" id="sync-btn" onclick="syncFromSheets()" style="border-color:rgba(15,157,88,.3);color:#4ade80;background:rgba(15,157,88,.07)" title="Sincronizar con Google Sheets">
@@ -610,7 +610,7 @@ tr:hover td{background:rgba(255,255,255,.015);}
 
 <script>
 // ── DATA ──────────────────────────────────────────────────────────
-const TODAY = new Date(2026,6,14); // 14 julio 2026
+const TODAY = new Date(2026,9,2); // 2 octubre 2026
 
 // Todos los eventos 2026 ordenados por fecha de inicio
 const EVENTS = [
@@ -1099,7 +1099,7 @@ function showSection(id){
   document.getElementById('section-'+id).classList.add('active');
   document.querySelector(`[onclick="showSection('${id}')"]`).classList.add('active');
   document.getElementById('page-title').textContent=TITLES[id]||id;
-  document.getElementById('page-sub').textContent=sheetsConnected?`Combinado: ${getActiveEvents().length} eventos (base + Sheets) · v5.1`:'v5.1 · Google Sheets';
+  document.getElementById('page-sub').textContent=sheetsConnected?`Combinado: ${getActiveEvents().length} eventos (base + Sheets) · v5.2`:'v5.2 · Google Sheets';
   if(id==='gantt')renderGantt();
   if(id==='mapa')renderMap();
   if(id==='deadlines')renderDeadlines();
